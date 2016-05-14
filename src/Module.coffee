@@ -1,8 +1,12 @@
 
 emptyFunction = require "emptyFunction"
 SortedArray = require "sorted-array"
-chokidar = require "chokidar"
+assertType = require "assertType"
+ErrorMap = require "ErrorMap"
+Chokidar = require "chokidar"
 syncFs = require "io/sync"
+isType = require "isType"
+assert = require "assert"
 match = require "micromatch"
 Event = require "event"
 Path = require "path"
@@ -69,7 +73,7 @@ module.exports = (type) ->
 
       deferred = Q.defer()
 
-      watcher = chokidar.watch()
+      watcher = Chokidar.watch()
 
       files = SortedArray [], (a, b) ->
         a = a.path.toLowerCase()
@@ -202,7 +206,7 @@ module.exports = (type) ->
 
       deferred = Q.defer()
 
-      watcher = chokidar.watch path, { depth: 0 }
+      watcher = Chokidar.watch path, { depth: 0 }
 
       mods = SortedArray [], (a, b) ->
         a = a.name.toLowerCase()
@@ -214,7 +218,8 @@ module.exports = (type) ->
         name = Path.relative lotus.path, path
         try Module name
         catch error
-          Module.reportError name, error, errorConfig.init
+          errors.init.resolve error, ->
+            log.yellow name
           return null
 
       onModuleFound = (path) ->
@@ -226,6 +231,7 @@ module.exports = (type) ->
 
         watcher.removeListener "addDir", onModuleFound
 
+        # TODO: Support 'addDir' and 'unlinkDir'!
         validEvents = { add: yes, change: yes, unlink: yes }
 
         watcher.on "all", (event, path) ->
@@ -266,17 +272,17 @@ module.exports = (type) ->
         promise: deferred.promise
       }
 
-errorConfig =
+errors =
 
-  init:
+  init: ErrorMap
     quiet: [
       "Module path must be a directory!"
       "Module with that name already exists!"
       "Module ignored by global config file!"
     ]
 
-  load:
-    quiet: [
-      "Expected an existing directory!"
-      "Failed to find configuration file!"
-    ]
+  # load: ErrorMap
+  #   quiet: [
+  #     "Expected an existing directory!"
+  #     "Failed to find configuration file!"
+  #   ]

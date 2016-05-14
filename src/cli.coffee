@@ -5,6 +5,7 @@
 # TODO: A command that lists the dependencies or dependers of each module.
 # TODO: Notify when dependencies exist that aren't being used.
 
+ErrorMap = require "ErrorMap"
 inArray = require "in-array"
 syncFs = require "io/sync"
 Path = require "path"
@@ -21,8 +22,13 @@ module.exports = ->
   log.moat 1
 
   initModule = (mod) ->
+
     mod.load [ "config", "plugins" ]
-    .fail (error) -> mod.reportError error, errorConfig.load
+
+    .fail (error) ->
+      errors.load.resolve error, ->
+        log.yellow mod.name
+
     .done()
 
   Module.watch lotus.path,
@@ -58,9 +64,9 @@ module.exports = ->
         log.gray "Watching files..."
         log.moat 1
 
-errorConfig =
+errors =
 
-  load:
+  load: ErrorMap
     quiet: [
       "'package.json' could not be found!"
     ]

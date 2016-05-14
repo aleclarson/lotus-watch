@@ -1,4 +1,6 @@
-var Path, Q, errorConfig, inArray, sync, syncFs;
+var ErrorMap, Path, Q, errors, inArray, sync, syncFs;
+
+ErrorMap = require("ErrorMap");
 
 inArray = require("in-array");
 
@@ -19,7 +21,9 @@ module.exports = function() {
   log.moat(1);
   initModule = function(mod) {
     return mod.load(["config", "plugins"]).fail(function(error) {
-      return mod.reportError(error, errorConfig.load);
+      return errors.load.resolve(error, function() {
+        return log.yellow(mod.name);
+      });
     }).done();
   };
   return Module.watch(lotus.path, {
@@ -59,10 +63,10 @@ module.exports = function() {
   });
 };
 
-errorConfig = {
-  load: {
+errors = {
+  load: ErrorMap({
     quiet: ["'package.json' could not be found!"]
-  }
+  })
 };
 
 //# sourceMappingURL=../../map/src/cli.map

@@ -1,4 +1,6 @@
-var Event, match;
+var Event, isType, match;
+
+isType = require("isType");
 
 match = require("micromatch");
 

@@ -1,12 +1,20 @@
-var Event, Path, Q, SortedArray, chokidar, emptyFunction, errorConfig, match, sync, syncFs;
+var Chokidar, ErrorMap, Event, Path, Q, SortedArray, assert, assertType, emptyFunction, errors, isType, match, sync, syncFs;
 
 emptyFunction = require("emptyFunction");
 
 SortedArray = require("sorted-array");
 
-chokidar = require("chokidar");
+assertType = require("assertType");
+
+ErrorMap = require("ErrorMap");
+
+Chokidar = require("chokidar");
 
 syncFs = require("io/sync");
+
+isType = require("isType");
+
+assert = require("assert");
 
 match = require("micromatch");
 
@@ -71,7 +79,7 @@ module.exports = function(type) {
       var File, deferred, files, onFileFound, onceFilesReady, watcher;
       File = lotus.File;
       deferred = Q.defer();
-      watcher = chokidar.watch();
+      watcher = Chokidar.watch();
       files = SortedArray([], function(a, b) {
         a = a.path.toLowerCase();
         b = b.path.toLowerCase();
@@ -221,7 +229,7 @@ module.exports = function(type) {
       var Module, deferred, initModule, mods, onModuleFound, onModulesReady, watcher;
       Module = lotus.Module;
       deferred = Q.defer();
-      watcher = chokidar.watch(path, {
+      watcher = Chokidar.watch(path, {
         depth: 0
       });
       mods = SortedArray([], function(a, b) {
@@ -243,7 +251,9 @@ module.exports = function(type) {
           return Module(name);
         } catch (error1) {
           error = error1;
-          Module.reportError(name, error, errorConfig.init);
+          errors.init.resolve(error, function() {
+            return log.yellow(name);
+          });
           return null;
         }
       };
@@ -307,13 +317,10 @@ module.exports = function(type) {
   });
 };
 
-errorConfig = {
-  init: {
+errors = {
+  init: ErrorMap({
     quiet: ["Module path must be a directory!", "Module with that name already exists!", "Module ignored by global config file!"]
-  },
-  load: {
-    quiet: ["Expected an existing directory!", "Failed to find configuration file!"]
-  }
+  })
 };
 
 //# sourceMappingURL=../../map/src/Module.map

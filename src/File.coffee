@@ -1,4 +1,5 @@
 
+isType = require "isType"
 match = require "micromatch"
 Event = require "event"
 

@@ -3,19 +3,26 @@
   "version": "1.0.0",
   "main": "js/src/index",
   "dependencies": {
+    "ErrorMap": "aleclarson/ErrorMap#1.0.0",
+    "assert": "aleclarson/assert#1.0.0",
+    "assertType": "aleclarson/assertType#1.0.0",
+    "chokidar": "aleclarson/chokidar#1.4.2",
+    "emptyFunction": "aleclarson/emptyFunction#1.0.0",
+    "event": "aleclarson/event#2.0.0",
     "in-array": "aleclarson/in-array#1.0.0",
     "io": "aleclarson/io#1.0.0",
-    "sync": "aleclarson/sync#1.0.0",
-    "q": "aleclarson/q#1.0.0",
+    "isType": "aleclarson/isType#1.0.0",
     "micromatch": "aleclarson/micromatch#2.3.8",
-    "event": "aleclarson/event#2.0.0",
-    "emptyFunction": "aleclarson/emptyFunction#1.0.0",
+    "q": "aleclarson/q#1.0.0",
     "sorted-array": "aleclarson/sorted-array#1.0.0",
-    "chokidar": "aleclarson/chokidar#1.4.2"
+    "sync": "aleclarson/sync#1.0.0"
   },
   "lotus": {
     "plugins": [
       "lotus-coffee"
+    ],
+    "implicitDependencies": [
+      "path"
     ]
   }
 }
