@@ -10,6 +10,7 @@ inArray = require "in-array"
 syncFs = require "io/sync"
 Path = require "path"
 sync = require "sync"
+log = require "log"
 Q = require "q"
 
 module.exports = ->
@@ -63,6 +64,9 @@ module.exports = ->
         log.moat 1
         log.gray "Watching files..."
         log.moat 1
+
+  # Keep the process alive.
+  return Q.defer().promise
 
 errors =
 

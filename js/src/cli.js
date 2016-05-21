@@ -1,4 +1,4 @@
-var ErrorMap, Path, Q, errors, inArray, sync, syncFs;
+var ErrorMap, Path, Q, errors, inArray, log, sync, syncFs;
 
 ErrorMap = require("ErrorMap");
 
@@ -9,6 +9,8 @@ syncFs = require("io/sync");
 Path = require("path");
 
 sync = require("sync");
+
+log = require("log");
 
 Q = require("q");
 
@@ -26,7 +28,7 @@ module.exports = function() {
       });
     }).done();
   };
-  return Module.watch(lotus.path, {
+  Module.watch(lotus.path, {
     add: function(mod) {
       return initModule(mod).done();
     },
@@ -61,6 +63,7 @@ module.exports = function() {
       });
     }
   });
+  return Q.defer().promise;
 };
 
 errors = {

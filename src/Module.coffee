@@ -11,6 +11,7 @@ match = require "micromatch"
 Event = require "event"
 Path = require "path"
 sync = require "sync"
+log = require "log"
 Q = require "q"
 
 module.exports = (type) ->

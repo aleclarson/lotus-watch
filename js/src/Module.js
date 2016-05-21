@@ -1,4 +1,4 @@
-var Chokidar, ErrorMap, Event, Path, Q, SortedArray, assert, assertType, emptyFunction, errors, isType, match, sync, syncFs;
+var Chokidar, ErrorMap, Event, Path, Q, SortedArray, assert, assertType, emptyFunction, errors, isType, log, match, sync, syncFs;
 
 emptyFunction = require("emptyFunction");
 
@@ -23,6 +23,8 @@ Event = require("event");
 Path = require("path");
 
 sync = require("sync");
+
+log = require("log");
 
 Q = require("q");
 
