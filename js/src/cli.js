@@ -1,6 +1,8 @@
-var ErrorMap, Path, Q, errors, inArray, log, sync, syncFs;
+var ErrorMap, Path, Promise, errors, inArray, log, sync, syncFs;
 
 ErrorMap = require("ErrorMap");
+
+Promise = require("Promise");
 
 inArray = require("in-array");
 
@@ -11,8 +13,6 @@ Path = require("path");
 sync = require("sync");
 
 log = require("log");
-
-Q = require("q");
 
 module.exports = function() {
   var Module, initModule;
@@ -54,7 +54,7 @@ module.exports = function() {
       } else {
         log.white("Found " + (log.color.green.dim(0)) + " modules!");
       }
-      return Q.all(sync.map(mods, function(mod) {
+      return Promise.all(sync.map(mods, function(mod) {
         return initModule(mod);
       })).then(function() {
         log.moat(1);
@@ -63,7 +63,7 @@ module.exports = function() {
       });
     }
   });
-  return Q.defer().promise;
+  return Promise.defer().promise;
 };
 
 errors = {

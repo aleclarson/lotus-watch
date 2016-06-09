@@ -4,6 +4,7 @@ SortedArray = require "sorted-array"
 assertType = require "assertType"
 ErrorMap = require "ErrorMap"
 Chokidar = require "chokidar"
+Promise = require "Promise"
 syncFs = require "io/sync"
 isType = require "isType"
 assert = require "assert"
@@ -12,7 +13,6 @@ Event = require "event"
 Path = require "path"
 sync = require "sync"
 log = require "log"
-Q = require "q"
 
 module.exports = (type) ->
 
@@ -31,7 +31,7 @@ module.exports = (type) ->
     watch: (pattern, listeners) ->
 
       if Array.isArray pattern
-        return Q.all sync.map pattern, (pattern) =>
+        return Promise.map pattern, (pattern) =>
           @watch pattern, listeners
 
       { Module, File } = lotus
@@ -72,7 +72,7 @@ module.exports = (type) ->
 
       { File } = lotus
 
-      deferred = Q.defer()
+      deferred = Promise.defer()
 
       watcher = Chokidar.watch()
 
@@ -126,7 +126,7 @@ module.exports = (type) ->
 
         notifyListeners "ready", files.array
 
-        deferred.fulfill files.array
+        deferred.resolve files.array
 
       watcher.on "add", onFileFound
       watcher.once "ready", onceFilesReady
@@ -205,7 +205,7 @@ module.exports = (type) ->
 
       { Module } = lotus
 
-      deferred = Q.defer()
+      deferred = Promise.defer()
 
       watcher = Chokidar.watch path, { depth: 0 }
 
@@ -263,7 +263,7 @@ module.exports = (type) ->
 
         notifyListeners "ready", mods.array
 
-        deferred.fulfill mods.array
+        deferred.resolve mods.array
 
       watcher.on "addDir", onModuleFound
       watcher.once "ready", onModulesReady

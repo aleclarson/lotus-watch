@@ -4,6 +4,7 @@
   "main": "js/src/index",
   "dependencies": {
     "ErrorMap": "aleclarson/ErrorMap#1.0.0",
+    "Promise": "aleclarson/Promise#1.0.0",
     "assert": "aleclarson/assert#1.0.0",
     "assertType": "aleclarson/assertType#1.0.0",
     "chokidar": "aleclarson/chokidar#1.4.2",
@@ -14,7 +15,6 @@
     "isType": "aleclarson/isType#1.0.0",
     "log": "aleclarson/log#1.0.0",
     "micromatch": "aleclarson/micromatch#2.3.8",
-    "q": "aleclarson/q#1.0.0",
     "sorted-array": "aleclarson/sorted-array#1.0.0",
     "sync": "aleclarson/sync#1.0.0"
   },

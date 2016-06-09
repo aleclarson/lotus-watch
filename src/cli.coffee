@@ -6,12 +6,12 @@
 # TODO: Notify when dependencies exist that aren't being used.
 
 ErrorMap = require "ErrorMap"
+Promise = require "Promise"
 inArray = require "in-array"
 syncFs = require "io/sync"
 Path = require "path"
 sync = require "sync"
 log = require "log"
-Q = require "q"
 
 module.exports = ->
 
@@ -57,7 +57,7 @@ module.exports = ->
       else
         log.white "Found #{log.color.green.dim 0} modules!"
 
-      Q.all sync.map mods, (mod) ->
+      Promise.all sync.map mods, (mod) ->
         initModule mod
 
       .then ->
@@ -66,7 +66,7 @@ module.exports = ->
         log.moat 1
 
   # Keep the process alive.
-  return Q.defer().promise
+  return Promise.defer().promise
 
 errors =
 

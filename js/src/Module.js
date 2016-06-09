@@ -1,4 +1,4 @@
-var Chokidar, ErrorMap, Event, Path, Q, SortedArray, assert, assertType, emptyFunction, errors, isType, log, match, sync, syncFs;
+var Chokidar, ErrorMap, Event, Path, Promise, SortedArray, assert, assertType, emptyFunction, errors, isType, log, match, sync, syncFs;
 
 emptyFunction = require("emptyFunction");
 
@@ -9,6 +9,8 @@ assertType = require("assertType");
 ErrorMap = require("ErrorMap");
 
 Chokidar = require("chokidar");
+
+Promise = require("Promise");
 
 syncFs = require("io/sync");
 
@@ -26,8 +28,6 @@ sync = require("sync");
 
 log = require("log");
 
-Q = require("q");
-
 module.exports = function(type) {
   type.defineValues({
     _watching: function() {
@@ -39,11 +39,11 @@ module.exports = function(type) {
     watch: function(pattern, listeners) {
       var File, Module, listener, notifyListeners, relPath;
       if (Array.isArray(pattern)) {
-        return Q.all(sync.map(pattern, (function(_this) {
+        return Promise.map(pattern, (function(_this) {
           return function(pattern) {
             return _this.watch(pattern, listeners);
           };
-        })(this)));
+        })(this));
       }
       Module = lotus.Module, File = lotus.File;
       assertType(pattern, String);
@@ -80,7 +80,7 @@ module.exports = function(type) {
     _initialWatch: function(pattern, notifyListeners) {
       var File, deferred, files, onFileFound, onceFilesReady, watcher;
       File = lotus.File;
-      deferred = Q.defer();
+      deferred = Promise.defer();
       watcher = Chokidar.watch();
       files = SortedArray([], function(a, b) {
         a = a.path.toLowerCase();
@@ -154,7 +154,7 @@ module.exports = function(type) {
             }
           });
           notifyListeners("ready", files.array);
-          return deferred.fulfill(files.array);
+          return deferred.resolve(files.array);
         };
       })(this);
       watcher.on("add", onFileFound);
@@ -230,7 +230,7 @@ module.exports = function(type) {
     _initialWatch: function(path, notifyListeners) {
       var Module, deferred, initModule, mods, onModuleFound, onModulesReady, watcher;
       Module = lotus.Module;
-      deferred = Q.defer();
+      deferred = Promise.defer();
       watcher = Chokidar.watch(path, {
         depth: 0
       });
@@ -307,7 +307,7 @@ module.exports = function(type) {
           }
         });
         notifyListeners("ready", mods.array);
-        return deferred.fulfill(mods.array);
+        return deferred.resolve(mods.array);
       };
       watcher.on("addDir", onModuleFound);
       watcher.once("ready", onModulesReady);
