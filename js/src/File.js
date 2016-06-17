@@ -2,9 +2,9 @@ var Event, isType, match;
 
 isType = require("isType");
 
-match = require("micromatch");
+Event = require("Event");
 
-Event = require("event");
+match = require("micromatch");
 
 module.exports = function(type) {
   type.defineValues({

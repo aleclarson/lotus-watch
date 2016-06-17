@@ -9,7 +9,7 @@ syncFs = require "io/sync"
 isType = require "isType"
 assert = require "assert"
 match = require "micromatch"
-Event = require "event"
+Event = require "Event"
 Path = require "path"
 sync = require "sync"
 log = require "log"
@@ -56,8 +56,6 @@ module.exports = (type) ->
 
       .then (files) ->
         notifyListeners "ready", files
-
-      .done()
 
       return listener
 
@@ -169,8 +167,6 @@ module.exports = (type) ->
 
       .then (mods) ->
         notifyListeners "ready", mods
-
-      .done()
 
       return listener
 

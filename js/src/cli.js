@@ -26,11 +26,11 @@ module.exports = function() {
       return errors.load.resolve(error, function() {
         return log.yellow(mod.name);
       });
-    }).done();
+    });
   };
   Module.watch(lotus.path, {
     add: function(mod) {
-      return initModule(mod).done();
+      return initModule(mod);
     },
     unlink: function(mod) {},
     ready: function(mods) {
@@ -54,9 +54,9 @@ module.exports = function() {
       } else {
         log.white("Found " + (log.color.green.dim(0)) + " modules!");
       }
-      return Promise.all(sync.map(mods, function(mod) {
+      return Promise.map(mods, function(mod) {
         return initModule(mod);
-      })).then(function() {
+      }).then(function() {
         log.moat(1);
         log.gray("Watching files...");
         return log.moat(1);

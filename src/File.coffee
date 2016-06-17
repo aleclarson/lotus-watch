@@ -1,7 +1,7 @@
 
 isType = require "isType"
+Event = require "Event"
 match = require "micromatch"
-Event = require "event"
 
 module.exports = (type) ->
 

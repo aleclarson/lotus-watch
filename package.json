@@ -4,12 +4,12 @@
   "main": "js/src/index",
   "dependencies": {
     "ErrorMap": "aleclarson/ErrorMap#1.0.0",
+    "Event": "aleclarson/Event#2.0.0",
     "Promise": "aleclarson/Promise#1.0.0",
     "assert": "aleclarson/assert#1.0.0",
     "assertType": "aleclarson/assertType#1.0.0",
     "chokidar": "aleclarson/chokidar#1.4.2",
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
-    "event": "aleclarson/event#2.0.0",
     "in-array": "aleclarson/in-array#1.0.0",
     "io": "aleclarson/io#1.0.0",
     "isType": "aleclarson/isType#1.0.0",

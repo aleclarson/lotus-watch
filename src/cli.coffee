@@ -30,12 +30,10 @@ module.exports = ->
       errors.load.resolve error, ->
         log.yellow mod.name
 
-    .done()
-
   Module.watch lotus.path,
 
     add: (mod) ->
-      initModule(mod).done()
+      initModule mod
 
     unlink: (mod) ->
       # TODO: Handle deleted modules!
@@ -57,7 +55,7 @@ module.exports = ->
       else
         log.white "Found #{log.color.green.dim 0} modules!"
 
-      Promise.all sync.map mods, (mod) ->
+      Promise.map mods, (mod) ->
         initModule mod
 
       .then ->

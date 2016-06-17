@@ -20,7 +20,7 @@ assert = require("assert");
 
 match = require("micromatch");
 
-Event = require("event");
+Event = require("Event");
 
 Path = require("path");
 
@@ -65,7 +65,7 @@ module.exports = function(type) {
       }
       this._watching[pattern].promise.then(function(files) {
         return notifyListeners("ready", files);
-      }).done();
+      });
       return listener;
     },
     stopWatching: function(pattern) {
@@ -196,7 +196,7 @@ module.exports = function(type) {
       }
       this._watching[path].promise.then(function(mods) {
         return notifyListeners("ready", mods);
-      }).done();
+      });
       return listener;
     },
     stopWatching: function(path) {
