@@ -1,7 +1,10 @@
 
+{ isMatch } = require "micromatch"
+
+emptyFunction = require "emptyFunction"
+assertType = require "assertType"
 isType = require "isType"
 Event = require "Event"
-match = require "micromatch"
 
 module.exports = (type) ->
 
@@ -16,8 +19,6 @@ module.exports = (type) ->
       return if @_deleted
       @_deleted = yes
 
-      { File } = lotus
-
       delete @module.files[@name]
 
   type.defineStatics
@@ -25,23 +26,32 @@ module.exports = (type) ->
     _didChange: Event()
 
     # Watch files that match the given patterns.
-    watch: (options, notifyListeners) ->
+    watch: (options, notify) ->
 
-      { File } = lotus
+      if isType options, Function
+        notify = options
+        options = {}
 
-      if isType options, String
+      else if isType options, String
         options = { include: options }
+
       else
-        if isType options, Function
-          onChange = options
-          options = {}
-        else options ?= {}
-        options.include ?= "**/*"
+        options ?= {}
 
-      return File._didChange (event, file) ->
+      assertType options, Object
+      assertType notify, Function
 
-        return if match(file.path, options.include).length is 0
+      if options.include?
+        isIncluded = (file) -> isMatch file.path, options.include
+      else isIncluded = emptyFunction.thatReturnsTrue
 
-        return if options.exclude? and match(file.path, options.exclude).length > 0
+      if options.exclude?
+        isExcluded = (file) -> isMatch file.path, options.exclude
+      else isExcluded = emptyFunction.thatReturnsFalse
 
-        notifyListeners event, file, options
+      onFileChange = (event, file) ->
+        return if not isIncluded file
+        return if isExcluded file
+        notify event, file, options
+
+      return lotus.File._didChange(onFileChange).start()

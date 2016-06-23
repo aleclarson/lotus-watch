@@ -45,7 +45,7 @@ module.exports = function() {
           color = index % 2 ? "cyan" : "green";
           newPart = module.name + " ";
           newLength = log.line.length + newPart.length;
-          if (newLength > log.size[0] - log.indent) {
+          if (log.size && newLength > log.size[0] - log.indent) {
             log.moat(0);
           }
           log[color](newPart);

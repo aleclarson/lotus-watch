@@ -37,7 +37,7 @@ module.exports = function(type) {
   });
   type.defineMethods({
     watch: function(pattern, listeners) {
-      var File, Module, listener, notifyListeners, relPath;
+      var listener, notify, relPath;
       if (Array.isArray(pattern)) {
         return Promise.map(pattern, (function(_this) {
           return function(pattern) {
@@ -45,7 +45,6 @@ module.exports = function(type) {
           };
         })(this));
       }
-      Module = lotus.Module, File = lotus.File;
       assertType(pattern, String);
       if (pattern[0] === "/") {
         relPath = Path.relative(this.path, pattern);
@@ -57,14 +56,14 @@ module.exports = function(type) {
       } else {
         pattern = Path.join(this.path, pattern);
       }
-      notifyListeners = Module._resolveListeners(listeners);
-      listener = File.watch(pattern, notifyListeners);
+      notify = lotus.Module._resolveListeners(listeners);
+      listener = lotus.File.watch(pattern, notify);
       if (!this._watching[pattern]) {
-        this._initialWatch(pattern, notifyListeners);
+        this._initialWatch(pattern, notify);
         return listener;
       }
       this._watching[pattern].promise.then(function(files) {
-        return notifyListeners("ready", files);
+        return notify("ready", files);
       });
       return listener;
     },
@@ -77,9 +76,8 @@ module.exports = function(type) {
       watcher.close();
       delete this._watching[pattern];
     },
-    _initialWatch: function(pattern, notifyListeners) {
-      var File, deferred, files, onFileFound, onceFilesReady, watcher;
-      File = lotus.File;
+    _initialWatch: function(pattern, notify) {
+      var deferred, files, onFileFound, onceFilesReady, watcher;
       deferred = Promise.defer();
       watcher = Chokidar.watch();
       files = SortedArray([], function(a, b) {
@@ -97,7 +95,7 @@ module.exports = function(type) {
           if (!syncFs.isFile(path)) {
             return;
           }
-          file = File(path, _this);
+          file = lotus.File(path, _this);
           return files.insert(file);
         };
       })(this);
@@ -127,7 +125,7 @@ module.exports = function(type) {
               if (file) {
                 return;
               }
-              file = File(path, _this);
+              file = lotus.File(path, _this);
               files.insert(file);
             }
             if (!file) {
@@ -147,13 +145,13 @@ module.exports = function(type) {
                 return;
               }
             }
-            File._didChange.emit(event, file);
+            lotus.File._didChange.emit(event, file);
             if (event === "unlink") {
               files.remove(file);
               return file._delete();
             }
           });
-          notifyListeners("ready", files.array);
+          notify("ready", files.array);
           return deferred.resolve(files.array);
         };
       })(this);
@@ -179,7 +177,7 @@ module.exports = function(type) {
       }
     },
     watch: function(path, listeners) {
-      var listener, notifyListeners;
+      var listener, notify;
       assertType(path, String);
       if (path[0] === ".") {
         path = Path.resolve(process.cwd(), path);
@@ -188,14 +186,14 @@ module.exports = function(type) {
         path: path,
         reason: "Expected a directory!"
       });
-      notifyListeners = this._resolveListeners(listeners);
-      listener = this._didChange(notifyListeners);
+      notify = this._resolveListeners(listeners);
+      listener = this._didChange(notify);
       if (!this._watching[path]) {
-        this._initialWatch(path, notifyListeners);
+        this._initialWatch(path, notify);
         return listener;
       }
       this._watching[path].promise.then(function(mods) {
-        return notifyListeners("ready", mods);
+        return notify("ready", mods);
       });
       return listener;
     },
@@ -227,9 +225,8 @@ module.exports = function(type) {
       }
       return emptyFunction;
     },
-    _initialWatch: function(path, notifyListeners) {
-      var Module, deferred, initModule, mods, onModuleFound, onModulesReady, watcher;
-      Module = lotus.Module;
+    _initialWatch: function(path, notify) {
+      var deferred, initModule, mods, onModuleFound, onModulesReady, watcher;
       deferred = Promise.defer();
       watcher = Chokidar.watch(path, {
         depth: 0
@@ -250,9 +247,10 @@ module.exports = function(type) {
         }
         name = Path.relative(lotus.path, path);
         try {
-          return Module(name);
+          return lotus.Module(name);
         } catch (error1) {
           error = error1;
+          delete lotus.Module.cache[name];
           errors.init.resolve(error, function() {
             return log.yellow(name);
           });
@@ -288,7 +286,7 @@ module.exports = function(type) {
             return;
           }
           name = Path.relative(lotus.path, path);
-          mod = Module.cache[name];
+          mod = lotus.Module.cache[name];
           if (event === "add") {
             if (mod) {
               return;
@@ -301,12 +299,12 @@ module.exports = function(type) {
           if (!mod) {
             return;
           }
-          Module._didChange.emit(event, mod);
+          lotus.Module._didChange.emit(event, mod);
           if (event === "unlink") {
             return mods.remove(mod);
           }
         });
-        notifyListeners("ready", mods.array);
+        notify("ready", mods.array);
         return deferred.resolve(mods.array);
       };
       watcher.on("addDir", onModuleFound);
@@ -321,7 +319,7 @@ module.exports = function(type) {
 
 errors = {
   init: ErrorMap({
-    quiet: ["Module path must be a directory!", "Module with that name already exists!", "Module ignored by global config file!"]
+    quiet: ["Module path must be a directory!", "Module with that name already exists!", "Module ignored by global config file!", "'package.json' could not be found!"]
   })
 };
 

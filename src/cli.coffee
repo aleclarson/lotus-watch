@@ -49,7 +49,7 @@ module.exports = ->
           color = if index % 2 then "cyan" else "green"
           newPart = module.name + " "
           newLength = log.line.length + newPart.length
-          log.moat 0 if newLength > log.size[0] - log.indent
+          log.moat 0 if log.size and newLength > log.size[0] - log.indent
           log[color] newPart
         log.popIndent()
       else

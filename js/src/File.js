@@ -1,10 +1,14 @@
-var Event, isType, match;
+var Event, assertType, emptyFunction, isMatch, isType;
+
+isMatch = require("micromatch").isMatch;
+
+emptyFunction = require("emptyFunction");
+
+assertType = require("assertType");
 
 isType = require("isType");
 
 Event = require("Event");
-
-match = require("micromatch");
 
 module.exports = function(type) {
   type.defineValues({
@@ -12,46 +16,55 @@ module.exports = function(type) {
   });
   type.defineMethods({
     _delete: function() {
-      var File;
       if (this._deleted) {
         return;
       }
       this._deleted = true;
-      File = lotus.File;
       return delete this.module.files[this.name];
     }
   });
   return type.defineStatics({
     _didChange: Event(),
-    watch: function(options, notifyListeners) {
-      var File, onChange;
-      File = lotus.File;
-      if (isType(options, String)) {
+    watch: function(options, notify) {
+      var isExcluded, isIncluded, onFileChange;
+      if (isType(options, Function)) {
+        notify = options;
+        options = {};
+      } else if (isType(options, String)) {
         options = {
           include: options
         };
       } else {
-        if (isType(options, Function)) {
-          onChange = options;
+        if (options == null) {
           options = {};
-        } else {
-          if (options == null) {
-            options = {};
-          }
-        }
-        if (options.include == null) {
-          options.include = "**/*";
         }
       }
-      return File._didChange(function(event, file) {
-        if (match(file.path, options.include).length === 0) {
+      assertType(options, Object);
+      assertType(notify, Function);
+      if (options.include != null) {
+        isIncluded = function(file) {
+          return isMatch(file.path, options.include);
+        };
+      } else {
+        isIncluded = emptyFunction.thatReturnsTrue;
+      }
+      if (options.exclude != null) {
+        isExcluded = function(file) {
+          return isMatch(file.path, options.exclude);
+        };
+      } else {
+        isExcluded = emptyFunction.thatReturnsFalse;
+      }
+      onFileChange = function(event, file) {
+        if (!isIncluded(file)) {
           return;
         }
-        if ((options.exclude != null) && match(file.path, options.exclude).length > 0) {
+        if (isExcluded(file)) {
           return;
         }
-        return notifyListeners(event, file, options);
-      });
+        return notify(event, file, options);
+      };
+      return lotus.File._didChange(onFileChange).start();
     }
   });
 };

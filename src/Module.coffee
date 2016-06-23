@@ -34,8 +34,6 @@ module.exports = (type) ->
         return Promise.map pattern, (pattern) =>
           @watch pattern, listeners
 
-      { Module, File } = lotus
-
       assertType pattern, String
 
       if pattern[0] is "/"
@@ -45,17 +43,17 @@ module.exports = (type) ->
       else
         pattern = Path.join @path, pattern
 
-      notifyListeners = Module._resolveListeners listeners
-      listener = File.watch pattern, notifyListeners
+      notify = lotus.Module._resolveListeners listeners
+      listener = lotus.File.watch pattern, notify
 
       unless @_watching[pattern]
-        @_initialWatch pattern, notifyListeners
+        @_initialWatch pattern, notify
         return listener
 
       @_watching[pattern].promise
 
       .then (files) ->
-        notifyListeners "ready", files
+        notify "ready", files
 
       return listener
 
@@ -66,9 +64,7 @@ module.exports = (type) ->
       delete @_watching[pattern]
       return
 
-    _initialWatch: (pattern, notifyListeners) ->
-
-      { File } = lotus
+    _initialWatch: (pattern, notify) ->
 
       deferred = Promise.defer()
 
@@ -81,7 +77,7 @@ module.exports = (type) ->
 
       onFileFound = (path) =>
         return unless syncFs.isFile path
-        file = File path, this
+        file = lotus.File path, this
         files.insert file
 
       onceFilesReady = =>
@@ -106,7 +102,7 @@ module.exports = (type) ->
 
           if event is "add"
             return if file
-            file = File path, this
+            file = lotus.File path, this
             files.insert file
 
           return unless file
@@ -116,13 +112,13 @@ module.exports = (type) ->
             newCode = file.read { sync: yes, force: yes }
             return if oldCode is newCode
 
-          File._didChange.emit event, file
+          lotus.File._didChange.emit event, file
 
           if event is "unlink"
             files.remove file
             file._delete() # TODO: Detect when a directory of files is deleted.
 
-        notifyListeners "ready", files.array
+        notify "ready", files.array
 
         deferred.resolve files.array
 
@@ -156,17 +152,17 @@ module.exports = (type) ->
 
       assert syncFs.isDir(path), { path, reason: "Expected a directory!" }
 
-      notifyListeners = @_resolveListeners listeners
-      listener = @_didChange notifyListeners
+      notify = @_resolveListeners listeners
+      listener = @_didChange notify
 
       unless @_watching[path]
-        @_initialWatch path, notifyListeners
+        @_initialWatch path, notify
         return listener
 
       @_watching[path].promise
 
       .then (mods) ->
-        notifyListeners "ready", mods
+        notify "ready", mods
 
       return listener
 
@@ -197,9 +193,7 @@ module.exports = (type) ->
 
       return emptyFunction
 
-    _initialWatch: (path, notifyListeners) ->
-
-      { Module } = lotus
+    _initialWatch: (path, notify) ->
 
       deferred = Promise.defer()
 
@@ -213,8 +207,9 @@ module.exports = (type) ->
       initModule = (path) ->
         return if path is lotus.path
         name = Path.relative lotus.path, path
-        try Module name
+        try lotus.Module name
         catch error
+          delete lotus.Module.cache[name]
           errors.init.resolve error, ->
             log.yellow name
           return null
@@ -244,7 +239,7 @@ module.exports = (type) ->
             return
 
           name = Path.relative lotus.path, path
-          mod = Module.cache[name]
+          mod = lotus.Module.cache[name]
 
           if event is "add"
             return if mod
@@ -252,12 +247,12 @@ module.exports = (type) ->
             mods.insert mod if mod
 
           return unless mod
-          Module._didChange.emit event, mod
+          lotus.Module._didChange.emit event, mod
 
           if event is "unlink"
             mods.remove mod
 
-        notifyListeners "ready", mods.array
+        notify "ready", mods.array
 
         deferred.resolve mods.array
 
@@ -276,6 +271,7 @@ errors =
       "Module path must be a directory!"
       "Module with that name already exists!"
       "Module ignored by global config file!"
+      "'package.json' could not be found!"
     ]
 
   # load: ErrorMap
