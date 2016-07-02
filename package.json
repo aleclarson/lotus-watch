@@ -2,6 +2,9 @@
   "name": "lotus-watch",
   "version": "1.0.0",
   "main": "js/src/index",
+  "peerDependencies": {
+    "lotus": "3.1.x"
+  },
   "dependencies": {
     "ErrorMap": "aleclarson/ErrorMap#1.0.0",
     "Event": "aleclarson/Event#2.0.0",

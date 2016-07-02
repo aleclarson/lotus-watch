@@ -15,22 +15,15 @@ sync = require("sync");
 log = require("log");
 
 module.exports = function() {
-  var Module, initModule;
+  var Module;
   Module = lotus.Module;
   log.moat(1);
   log.white("Crawling: ");
   log.yellow(lotus.path);
   log.moat(1);
-  initModule = function(mod) {
-    return mod.load(["config", "plugins"]).fail(function(error) {
-      return errors.load.resolve(error, function() {
-        return log.yellow(mod.name);
-      });
-    });
-  };
   Module.watch(lotus.path, {
     add: function(mod) {
-      return initModule(mod);
+      return mod.load(["config", "plugins"]).fail(errors.loadModule);
     },
     unlink: function(mod) {},
     ready: function(mods) {
@@ -55,7 +48,7 @@ module.exports = function() {
         log.white("Found " + (log.color.green.dim(0)) + " modules!");
       }
       return Promise.map(mods, function(mod) {
-        return initModule(mod);
+        return mod.load(["config", "plugins"]).fail(errors.loadModule);
       }).then(function() {
         log.moat(1);
         log.gray("Watching files...");
@@ -66,10 +59,13 @@ module.exports = function() {
   return Promise.defer().promise;
 };
 
-errors = {
-  load: ErrorMap({
-    quiet: ["'package.json' could not be found!"]
-  })
+errors = {};
+
+errors.loadModule = function(error) {
+  if (/^Missing config file:/.test(error.message)) {
+    return;
+  }
+  throw error;
 };
 
 //# sourceMappingURL=../../map/src/cli.map

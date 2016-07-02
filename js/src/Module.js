@@ -1,4 +1,4 @@
-var Chokidar, ErrorMap, Event, Path, Promise, SortedArray, assert, assertType, emptyFunction, errors, isType, log, match, sync, syncFs;
+var Chokidar, Event, Path, Promise, SortedArray, assert, assertType, emptyFunction, errors, inArray, isType, log, match, sync, syncFs;
 
 emptyFunction = require("emptyFunction");
 
@@ -6,11 +6,11 @@ SortedArray = require("sorted-array");
 
 assertType = require("assertType");
 
-ErrorMap = require("ErrorMap");
-
 Chokidar = require("chokidar");
 
 Promise = require("Promise");
+
+inArray = require("in-array");
 
 syncFs = require("io/sync");
 
@@ -176,23 +176,22 @@ module.exports = function(type) {
         return this._didChange.listenable;
       }
     },
-    watch: function(path, listeners) {
+    watch: function(dirPath, listeners) {
       var listener, notify;
-      assertType(path, String);
-      if (path[0] === ".") {
-        path = Path.resolve(process.cwd(), path);
+      assertType(dirPath, String);
+      if (dirPath[0] === ".") {
+        dirPath = Path.resolve(process.cwd(), dirPath);
       }
-      assert(syncFs.isDir(path), {
-        path: path,
-        reason: "Expected a directory!"
-      });
+      if (!syncFs.isDir(dirPath)) {
+        throw Error("Expected a directory: '" + dirPath + "'");
+      }
       notify = this._resolveListeners(listeners);
       listener = this._didChange(notify);
-      if (!this._watching[path]) {
-        this._initialWatch(path, notify);
+      if (!this._watching[dirPath]) {
+        this._initialWatch(dirPath, notify);
         return listener;
       }
-      this._watching[path].promise.then(function(mods) {
+      this._watching[dirPath].promise.then(function(mods) {
         return notify("ready", mods);
       });
       return listener;
@@ -225,12 +224,13 @@ module.exports = function(type) {
       }
       return emptyFunction;
     },
-    _initialWatch: function(path, notify) {
-      var deferred, initModule, mods, onModuleFound, onModulesReady, watcher;
+    _initialWatch: function(dirPath, notify) {
+      var deferred, loadModule, loading, mods, onModuleFound, onModulesReady, watcher;
       deferred = Promise.defer();
-      watcher = Chokidar.watch(path, {
+      watcher = Chokidar.watch(dirPath, {
         depth: 0
       });
+      loading = [];
       mods = SortedArray([], function(a, b) {
         a = a.name.toLowerCase();
         b = b.name.toLowerCase();
@@ -240,61 +240,46 @@ module.exports = function(type) {
           return -1;
         }
       });
-      initModule = function(path) {
-        var error, name;
-        if (path === lotus.path) {
-          return;
-        }
-        name = Path.relative(lotus.path, path);
-        try {
-          return lotus.Module(name);
-        } catch (error1) {
-          error = error1;
-          delete lotus.Module.cache[name];
-          errors.init.resolve(error, function() {
-            return log.yellow(name);
-          });
-          return null;
-        }
-      };
-      onModuleFound = function(path) {
+      onModuleFound = function(modPath) {
         var mod;
-        mod = initModule(path);
-        if (!mod) {
-          return;
-        }
-        return mods.insert(mod);
+        mod = loadModule(modPath).then(function(mod) {
+          return mod && mods.insert(mod);
+        });
+        return loading.push(mod);
       };
       onModulesReady = function() {
-        var validEvents;
+        var onModuleEvent, validEvents;
         watcher.removeListener("addDir", onModuleFound);
         validEvents = {
           add: true,
           change: true,
           unlink: true
         };
-        watcher.on("all", function(event, path) {
-          var mod, name;
+        onModuleEvent = function(event, modPath) {
+          var mod, modName;
           if (!validEvents[event]) {
             log.moat(1);
             log.yellow("Warning: ");
             log.white("Module.watch()");
             log.moat(0);
-            log.gray.dim("Invalid event name: ");
+            log.gray.dim("Unhandled event name: ");
             log.gray("'" + event + "'");
             log.moat(1);
             return;
           }
-          name = Path.relative(lotus.path, path);
-          mod = lotus.Module.cache[name];
+          modName = Path.relative(dirPath, modPath);
+          mod = lotus.Module.cache[modName];
           if (event === "add") {
             if (mod) {
               return;
             }
-            mod = initModule(path);
-            if (mod) {
+            return loadModule(modPath).then(function(mod) {
+              if (!mod) {
+                return;
+              }
               mods.insert(mod);
-            }
+              return lotus.Module._didChange.emit(event, mod);
+            });
           }
           if (!mod) {
             return;
@@ -303,13 +288,26 @@ module.exports = function(type) {
           if (event === "unlink") {
             return mods.remove(mod);
           }
+        };
+        return Promise.all(loading).then(function() {
+          deferred.resolve(mods.array);
+          notify("ready", mods.array);
+          return watcher.on("all", onModuleEvent);
         });
-        notify("ready", mods.array);
-        return deferred.resolve(mods.array);
       };
+      loadModule = Promise.wrap(function(modPath) {
+        if (modPath === dirPath) {
+          return;
+        }
+        return lotus.Module.load(modPath).then(function(mod) {
+          if (mod && !inArray(lotus.config.ignoredModules, mod.name)) {
+            return mod;
+          }
+        }).fail(errors.loadModule);
+      });
       watcher.on("addDir", onModuleFound);
       watcher.once("ready", onModulesReady);
-      return this._watching[path] = {
+      return this._watching[dirPath] = {
         watcher: watcher,
         promise: deferred.promise
       };
@@ -317,10 +315,13 @@ module.exports = function(type) {
   });
 };
 
-errors = {
-  init: ErrorMap({
-    quiet: ["Module path must be a directory!", "Module with that name already exists!", "Module ignored by global config file!", "'package.json' could not be found!"]
-  })
+errors = {};
+
+errors.loadModule = function(error) {
+  if (/^Missing config file:/.test(error.message)) {
+    return;
+  }
+  throw error;
 };
 
 //# sourceMappingURL=../../map/src/Module.map

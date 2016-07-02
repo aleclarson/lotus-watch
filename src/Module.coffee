@@ -2,9 +2,9 @@
 emptyFunction = require "emptyFunction"
 SortedArray = require "sorted-array"
 assertType = require "assertType"
-ErrorMap = require "ErrorMap"
 Chokidar = require "chokidar"
 Promise = require "Promise"
+inArray = require "in-array"
 syncFs = require "io/sync"
 isType = require "isType"
 assert = require "assert"
@@ -143,27 +143,25 @@ module.exports = (type) ->
       @_didChange.listenable
 
     # Watch modules that exist in the given directory!
-    watch: (path, listeners) ->
+    watch: (dirPath, listeners) ->
 
-      assertType path, String
+      assertType dirPath, String
 
-      if path[0] is "."
-        path = Path.resolve process.cwd(), path
+      if dirPath[0] is "."
+        dirPath = Path.resolve process.cwd(), dirPath
 
-      assert syncFs.isDir(path), { path, reason: "Expected a directory!" }
+      if not syncFs.isDir dirPath
+        throw Error "Expected a directory: '#{dirPath}'"
 
       notify = @_resolveListeners listeners
       listener = @_didChange notify
 
-      unless @_watching[path]
-        @_initialWatch path, notify
+      unless @_watching[dirPath]
+        @_initialWatch dirPath, notify
         return listener
 
-      @_watching[path].promise
-
-      .then (mods) ->
-        notify "ready", mods
-
+      @_watching[dirPath].promise
+      .then (mods) -> notify "ready", mods
       return listener
 
     stopWatching: (path) ->
@@ -193,31 +191,22 @@ module.exports = (type) ->
 
       return emptyFunction
 
-    _initialWatch: (path, notify) ->
+    _initialWatch: (dirPath, notify) ->
 
       deferred = Promise.defer()
 
-      watcher = Chokidar.watch path, { depth: 0 }
+      watcher = Chokidar.watch dirPath, { depth: 0 }
 
+      loading = []
       mods = SortedArray [], (a, b) ->
         a = a.name.toLowerCase()
         b = b.name.toLowerCase()
         if a > b then 1 else -1
 
-      initModule = (path) ->
-        return if path is lotus.path
-        name = Path.relative lotus.path, path
-        try lotus.Module name
-        catch error
-          delete lotus.Module.cache[name]
-          errors.init.resolve error, ->
-            log.yellow name
-          return null
-
-      onModuleFound = (path) ->
-        mod = initModule path
-        return unless mod
-        mods.insert mod
+      onModuleFound = (modPath) ->
+        mod = loadModule modPath
+        .then (mod) -> mod and mods.insert mod
+        loading.push mod
 
       onModulesReady = ->
 
@@ -226,56 +215,53 @@ module.exports = (type) ->
         # TODO: Support 'addDir' and 'unlinkDir'!
         validEvents = { add: yes, change: yes, unlink: yes }
 
-        watcher.on "all", (event, path) ->
+        onModuleEvent = (event, modPath) ->
 
           unless validEvents[event]
             log.moat 1
             log.yellow "Warning: "
             log.white "Module.watch()"
             log.moat 0
-            log.gray.dim "Invalid event name: "
+            log.gray.dim "Unhandled event name: "
             log.gray "'#{event}'"
             log.moat 1
             return
 
-          name = Path.relative lotus.path, path
-          mod = lotus.Module.cache[name]
+          modName = Path.relative dirPath, modPath
+          mod = lotus.Module.cache[modName]
 
           if event is "add"
             return if mod
-            mod = initModule path
-            mods.insert mod if mod
+            return loadModule modPath
+            .then (mod) ->
+              return if not mod
+              mods.insert mod
+              lotus.Module._didChange.emit event, mod
 
-          return unless mod
+          return if not mod
           lotus.Module._didChange.emit event, mod
+          mods.remove mod if event is "unlink"
 
-          if event is "unlink"
-            mods.remove mod
+        Promise.all(loading).then ->
+          deferred.resolve mods.array
+          notify "ready", mods.array
+          watcher.on "all", onModuleEvent
 
-        notify "ready", mods.array
-
-        deferred.resolve mods.array
+      loadModule = Promise.wrap (modPath) ->
+        return if modPath is dirPath
+        lotus.Module.load modPath
+        .then (mod) -> mod if mod and not inArray lotus.config.ignoredModules, mod.name
+        .fail errors.loadModule
 
       watcher.on "addDir", onModuleFound
       watcher.once "ready", onModulesReady
 
-      @_watching[path] = {
+      @_watching[dirPath] = {
         watcher
         promise: deferred.promise
       }
 
-errors =
-
-  init: ErrorMap
-    quiet: [
-      "Module path must be a directory!"
-      "Module with that name already exists!"
-      "Module ignored by global config file!"
-      "'package.json' could not be found!"
-    ]
-
-  # load: ErrorMap
-  #   quiet: [
-  #     "Expected an existing directory!"
-  #     "Failed to find configuration file!"
-  #   ]
+errors = {}
+errors.loadModule = (error) ->
+  return if /^Missing config file:/.test error.message
+  throw error

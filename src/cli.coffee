@@ -22,18 +22,11 @@ module.exports = ->
   log.yellow lotus.path
   log.moat 1
 
-  initModule = (mod) ->
-
-    mod.load [ "config", "plugins" ]
-
-    .fail (error) ->
-      errors.load.resolve error, ->
-        log.yellow mod.name
-
   Module.watch lotus.path,
 
     add: (mod) ->
-      initModule mod
+      mod.load [ "config", "plugins" ]
+      .fail errors.loadModule
 
     unlink: (mod) ->
       # TODO: Handle deleted modules!
@@ -56,7 +49,8 @@ module.exports = ->
         log.white "Found #{log.color.green.dim 0} modules!"
 
       Promise.map mods, (mod) ->
-        initModule mod
+        mod.load [ "config", "plugins" ]
+        .fail errors.loadModule
 
       .then ->
         log.moat 1
@@ -64,11 +58,9 @@ module.exports = ->
         log.moat 1
 
   # Keep the process alive.
-  return Promise.defer().promise
+  Promise.defer().promise
 
-errors =
-
-  load: ErrorMap
-    quiet: [
-      "'package.json' could not be found!"
-    ]
+errors = {}
+errors.loadModule = (error) ->
+  return if /^Missing config file:/.test error.message
+  throw error
