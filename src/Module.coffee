@@ -250,7 +250,7 @@ module.exports = (type) ->
       loadModule = Promise.wrap (modPath) ->
         return if modPath is dirPath
         lotus.Module.load modPath
-        .then (mod) -> mod if mod and not inArray lotus.config.ignoredModules, mod.name
+        .then (mod) -> mod if mod and not lotus.isModuleIgnored mod.name
         .fail errors.loadModule
 
       watcher.on "addDir", onModuleFound

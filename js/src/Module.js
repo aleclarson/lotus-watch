@@ -300,7 +300,7 @@ module.exports = function(type) {
           return;
         }
         return lotus.Module.load(modPath).then(function(mod) {
-          if (mod && !inArray(lotus.config.ignoredModules, mod.name)) {
+          if (mod && !lotus.isModuleIgnored(mod.name)) {
             return mod;
           }
         }).fail(errors.loadModule);
