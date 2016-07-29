@@ -10,7 +10,7 @@
     "Event": "aleclarson/Event#2.0.1",
     "Promise": "aleclarson/Promise#1.0.0",
     "assert": "aleclarson/assert#1.0.0",
-    "assertType": "aleclarson/assertType#1.0.0",
+    "assertType": "aleclarson/assertType#2.0.0",
     "chokidar": "aleclarson/chokidar#1.4.2",
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
     "in-array": "aleclarson/in-array#1.0.0",
