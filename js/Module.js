@@ -324,4 +324,4 @@ errors.loadModule = function(error) {
   throw error;
 };
 
-//# sourceMappingURL=../../map/src/Module.map
+//# sourceMappingURL=map/Module.map

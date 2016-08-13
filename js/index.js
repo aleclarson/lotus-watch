@@ -14,4 +14,4 @@ exports.initFileType = function() {
   return require("./File");
 };
 
-//# sourceMappingURL=../../map/src/index.map
+//# sourceMappingURL=map/index.map

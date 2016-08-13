@@ -68,4 +68,4 @@ errors.loadModule = function(error) {
   throw error;
 };
 
-//# sourceMappingURL=../../map/src/cli.map
+//# sourceMappingURL=map/cli.map
