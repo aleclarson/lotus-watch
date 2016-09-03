@@ -1,4 +1,4 @@
-var Chokidar, Event, Path, Promise, SortedArray, assert, assertType, emptyFunction, errors, inArray, isType, log, match, sync, syncFs;
+var Chokidar, Event, Path, Promise, SortedArray, assertType, emptyFunction, errors, inArray, isType, log, match, sync, syncFs;
 
 emptyFunction = require("emptyFunction");
 
@@ -15,8 +15,6 @@ inArray = require("in-array");
 syncFs = require("io/sync");
 
 isType = require("isType");
-
-assert = require("assert");
 
 match = require("micromatch");
 
@@ -48,11 +46,9 @@ module.exports = function(type) {
       assertType(pattern, String);
       if (pattern[0] === "/") {
         relPath = Path.relative(this.path, pattern);
-        assert(relPath.slice(0, 2) !== "..", {
-          pattern: pattern,
-          mod: this,
-          reason: "Absolute pattern does not belong to this module."
-        });
+        if (relPath.slice(0, 2) === "..") {
+          throw Error("Absolute pattern does not belong to this module!");
+        }
       } else {
         pattern = Path.join(this.path, pattern);
       }
@@ -83,7 +79,9 @@ module.exports = function(type) {
       files = SortedArray([], function(a, b) {
         a = a.path.toLowerCase();
         b = b.path.toLowerCase();
-        if (a > b) {
+        if (a === b) {
+          return 0;
+        } else if (a > b) {
           return 1;
         } else {
           return -1;
@@ -95,7 +93,7 @@ module.exports = function(type) {
           if (!syncFs.isFile(path)) {
             return;
           }
-          file = lotus.File(path, _this);
+          file = _this.getFile(path);
           return files.insert(file);
         };
       })(this);
@@ -125,7 +123,7 @@ module.exports = function(type) {
               if (file) {
                 return;
               }
-              file = lotus.File(path, _this);
+              file = _this.getFile(path);
               files.insert(file);
             }
             if (!file) {
@@ -268,7 +266,9 @@ module.exports = function(type) {
             return;
           }
           modName = Path.relative(dirPath, modPath);
-          mod = lotus.Module.cache[modName];
+          if (lotus.Module.has(modName)) {
+            mod = lotus.Module.get(modName);
+          }
           if (event === "add") {
             if (mod) {
               return;

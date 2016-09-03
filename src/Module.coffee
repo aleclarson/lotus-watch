@@ -7,7 +7,6 @@ Promise = require "Promise"
 inArray = require "in-array"
 syncFs = require "io/sync"
 isType = require "isType"
-assert = require "assert"
 match = require "micromatch"
 Event = require "Event"
 Path = require "path"
@@ -38,7 +37,8 @@ module.exports = (type) ->
 
       if pattern[0] is "/"
         relPath = Path.relative @path, pattern
-        assert relPath[0..1] isnt "..", { pattern, mod: this, reason: "Absolute pattern does not belong to this module." }
+        if relPath[0..1] is ".."
+          throw Error "Absolute pattern does not belong to this module!"
 
       else
         pattern = Path.join @path, pattern
@@ -73,11 +73,13 @@ module.exports = (type) ->
       files = SortedArray [], (a, b) ->
         a = a.path.toLowerCase()
         b = b.path.toLowerCase()
-        if a > b then 1 else -1
+        if a is b then 0
+        else if a > b then 1
+        else -1
 
       onFileFound = (path) =>
         return unless syncFs.isFile path
-        file = lotus.File path, this
+        file = @getFile path
         files.insert file
 
       onceFilesReady = =>
@@ -102,7 +104,7 @@ module.exports = (type) ->
 
           if event is "add"
             return if file
-            file = lotus.File path, this
+            file = @getFile path
             files.insert file
 
           return unless file
@@ -135,7 +137,7 @@ module.exports = (type) ->
     _delete: ->
       return if @_deleted
       @_deleted = yes
-      # TODO: delete lotus.Module.cache[@name]
+      # TODO: delete lotus.Module.delete @name
 
   type.defineStatics
 
@@ -228,7 +230,8 @@ module.exports = (type) ->
             return
 
           modName = Path.relative dirPath, modPath
-          mod = lotus.Module.cache[modName]
+          if lotus.Module.has modName
+            mod = lotus.Module.get modName
 
           if event is "add"
             return if mod
