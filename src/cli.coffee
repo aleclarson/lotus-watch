@@ -5,17 +5,9 @@
 # TODO: A command that lists the dependencies or dependers of each module.
 # TODO: Notify when dependencies exist that aren't being used.
 
-ErrorMap = require "ErrorMap"
-Promise = require "Promise"
-inArray = require "in-array"
-syncFs = require "io/sync"
-Path = require "path"
-sync = require "sync"
-log = require "log"
-
 module.exports = ->
 
-  { Module } = lotus
+  {Module} = lotus
 
   log.moat 1
   log.white "Crawling: "
@@ -48,7 +40,7 @@ module.exports = ->
       else
         log.white "Found #{log.color.green.dim 0} modules!"
 
-      Promise.map mods, (mod) ->
+      Promise.all mods, (mod) ->
         mod.load [ "config", "plugins" ]
         .fail errors.loadModule
 

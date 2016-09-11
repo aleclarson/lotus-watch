@@ -30,7 +30,7 @@ module.exports = (type) ->
     watch: (pattern, listeners) ->
 
       if Array.isArray pattern
-        return Promise.map pattern, (pattern) =>
+        return Promise.all pattern, (pattern) =>
           @watch pattern, listeners
 
       assertType pattern, String
@@ -160,11 +160,11 @@ module.exports = (type) ->
 
       unless @_watching[dirPath]
         @_initialWatch dirPath, notify
-        return listener
+        return listener.start()
 
       @_watching[dirPath].promise
-      .then (mods) -> notify "ready", mods
-      return listener
+        .then (mods) -> notify "ready", mods
+      return listener.start()
 
     stopWatching: (path) ->
       return unless @_watching[path]
