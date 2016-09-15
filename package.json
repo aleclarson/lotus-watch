@@ -13,7 +13,6 @@
     "lotus": "3.2.x"
   },
   "dependencies": {
-    "ErrorMap": "aleclarson/ErrorMap#1.0.0",
     "Event": "aleclarson/Event#2.0.1",
     "assertType": "aleclarson/assertType#2.0.0",
     "chokidar": "aleclarson/chokidar#1.4.2",
