@@ -39,6 +39,7 @@ module.exports = ->
         log.popIndent()
       else
         log.white "Found #{log.color.green.dim 0} modules!"
+      log.moat 1
 
       Promise.all mods, (mod) ->
         mod.load [ "config", "plugins" ]

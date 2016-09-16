@@ -206,9 +206,7 @@ module.exports = (type) ->
         if a > b then 1 else -1
 
       onModuleFound = (modPath) ->
-        mod = loadModule modPath
-        .then (mod) -> mod and mods.insert mod
-        loading.push mod
+        loading.push modPath
 
       onModulesReady = ->
 
@@ -245,15 +243,24 @@ module.exports = (type) ->
           lotus.Module._didChange.emit event, mod
           mods.remove mod if event is "unlink"
 
-        Promise.all(loading).then ->
+        Promise.all loading, (modPath) ->
+          loadModule(modPath).then (mod) ->
+            mod and mods.insert mod
+            return
+
+        .then ->
           deferred.resolve mods.array
           notify "ready", mods.array
           watcher.on "all", onModuleEvent
 
-      loadModule = Promise.wrap (modPath) ->
-        return if modPath is dirPath
+      loadModule = (modPath) ->
+        if modPath is dirPath
+          return Promise()
         lotus.Module.load modPath
-        .then (mod) -> mod if mod and not lotus.isModuleIgnored mod.name
+        .then (mod) ->
+          return if not mod
+          return if lotus.isModuleIgnored mod.name
+          return mod
         .fail errors.loadModule
 
       watcher.on "addDir", onModuleFound
