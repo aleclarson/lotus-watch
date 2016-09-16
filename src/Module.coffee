@@ -9,7 +9,6 @@ syncFs = require "io/sync"
 isType = require "isType"
 match = require "micromatch"
 Event = require "Event"
-Path = require "path"
 sync = require "sync"
 log = require "log"
 
@@ -17,59 +16,30 @@ module.exports = (type) ->
 
   type.defineValues
 
-    # The keys are patterns passed to 'module.watch'.
-    # The values are shaped like { watcher, promise }.
-    _watching: -> Object.create null
-
     # This module has been deleted!
     _deleted: no
 
   type.defineMethods
 
     # Search this module for files that match the given pattern.
-    watch: (pattern, listeners) ->
+    watch: (options, listeners) ->
+      assertType options, Object.or Array, String
 
-      if Array.isArray pattern
-        return Promise.all pattern, (pattern) =>
-          @watch pattern, listeners
+      if Array.isArray options
+        options = options.map (pattern) =>
+          if pattern[0] isnt path.sep
+          then path.join @path, pattern
+          else pattern
+        options =
+          include: "(#{options.join "|"})"
 
-      assertType pattern, String
-
-      if pattern[0] is "/"
-        relPath = Path.relative @path, pattern
-        if relPath[0..1] is ".."
-          throw Error "Absolute pattern does not belong to this module!"
-
-      else
-        pattern = Path.join @path, pattern
-
-      notify = lotus.Module._resolveListeners listeners
-      listener = lotus.File.watch pattern, notify
-
-      unless @_watching[pattern]
-        @_initialWatch pattern, notify
-        return listener
-
-      @_watching[pattern].promise
-
-      .then (files) ->
-        notify "ready", files
-
-      return listener
-
-    stopWatching: (pattern) ->
-      return unless @_watching[pattern]
-      { watcher } = @_watching[pattern]
-      watcher.close()
-      delete @_watching[pattern]
-      return
-
-    _initialWatch: (pattern, notify) ->
-
-      deferred = Promise.defer()
+      else if isType options, String
+        options = include:
+          if options[0] isnt path.sep
+          then path.join @path, options
+          else options
 
       watcher = Chokidar.watch()
-
       files = SortedArray [], (a, b) ->
         a = a.path.toLowerCase()
         b = b.path.toLowerCase()
@@ -84,10 +54,10 @@ module.exports = (type) ->
 
       onceFilesReady = =>
 
+        notify "ready", files.array
         watcher.removeListener "add", onFileFound
 
-        validEvents = { add: yes, change: yes, unlink: yes }
-
+        validEvents = {add: 1, change: 1, unlink: 1}
         watcher.on "all", (event, path) =>
 
           unless validEvents[event]
@@ -120,18 +90,15 @@ module.exports = (type) ->
             files.remove file
             file._delete() # TODO: Detect when a directory of files is deleted.
 
-        notify "ready", files.array
-
-        deferred.resolve files.array
-
       watcher.on "add", onFileFound
       watcher.once "ready", onceFilesReady
 
-      watcher.add pattern
-      @_watching[pattern] = {
-        watcher
-        promise: deferred.promise
-      }
+      if Array.isArray options.include
+        watcher.add pattern for pattern in options.include
+      else watcher.add options.include
+
+      notify = lotus.Module._resolveListeners listeners
+      return lotus.File.watch options, notify
 
     # TODO: Use a 'retainCount' to prevent deleting early.
     _delete: ->
