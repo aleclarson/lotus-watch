@@ -27,12 +27,10 @@ module.exports = (type) ->
       assertType options, Object.or Array, String
 
       if Array.isArray options
-        options = options.map (pattern) =>
+        options = include: options.map (pattern) =>
           if pattern[0] isnt path.sep
           then path.join @path, pattern
           else pattern
-        options =
-          include: "(#{options.join "|"})"
 
       else if isType options, String
         options = include:
@@ -95,9 +93,12 @@ module.exports = (type) ->
       watcher.once "ready", onceFilesReady
 
       if Array.isArray options.include
-        watcher.add pattern for pattern in options.include
-      else watcher.add options.include
+        options.include = "(#{options.include.join "|"})"
 
+      if Array.isArray options.exclude
+        options.exclude = "(#{options.exclude.join "|"})"
+
+      watcher.add options.include
       notify = lotus.Module._resolveListeners listeners
       return lotus.File.watch options, notify
 
