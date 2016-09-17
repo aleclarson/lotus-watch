@@ -9,6 +9,7 @@ syncFs = require "io/sync"
 isType = require "isType"
 match = require "micromatch"
 Event = require "Event"
+path = require "path"
 sync = require "sync"
 log = require "log"
 
@@ -117,7 +118,7 @@ module.exports = (type) ->
       assertType dirPath, String
 
       if dirPath[0] is "."
-        dirPath = Path.resolve process.cwd(), dirPath
+        dirPath = path.resolve process.cwd(), dirPath
 
       if not syncFs.isDir dirPath
         throw Error "Expected a directory: '#{dirPath}'"
@@ -194,7 +195,7 @@ module.exports = (type) ->
             log.moat 1
             return
 
-          modName = Path.relative dirPath, modPath
+          modName = path.relative dirPath, modPath
           if lotus.Module.has modName
             mod = lotus.Module.get modName
 
