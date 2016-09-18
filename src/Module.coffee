@@ -38,7 +38,6 @@ module.exports = (type) ->
           then path.join @path, options
           else options
 
-      watcher = Chokidar.watch()
       files = SortedArray [], (a, b) ->
         a = a.path.toLowerCase()
         b = b.path.toLowerCase()
@@ -89,18 +88,14 @@ module.exports = (type) ->
             files.remove file
             file._delete() # TODO: Detect when a directory of files is deleted.
 
+      watcher = Chokidar.watch options.include,
+        ignored: options.exclude
+
       watcher.on "add", onFileFound
       watcher.once "ready", onceFilesReady
 
-      if Array.isArray options.include
-        options.include = "(#{options.include.join "|"})"
-
-      if Array.isArray options.exclude
-        options.exclude = "(#{options.exclude.join "|"})"
-
-      watcher.add options.include
       notify = lotus.Module._resolveListeners listeners
-      return lotus.File.watch options, notify
+      return watchFiles options, notify
 
     # TODO: Use a 'retainCount' to prevent deleting early.
     _delete: ->
@@ -239,6 +234,22 @@ module.exports = (type) ->
         watcher
         promise: deferred.promise
       }
+
+watchFiles = ({include, exclude}, notify) ->
+
+  if Array.isArray include
+    include =
+      if include.length > 1
+      then "(#{include.join "|"})"
+      else include[0]
+
+  if Array.isArray exclude
+    exclude =
+      if exclude.length > 1
+      then "(#{exclude.join "|"})"
+      else exclude[0]
+
+  return lotus.File.watch {include, exclude}, notify
 
 errors = {}
 errors.loadModule = (error) ->
