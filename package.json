@@ -23,7 +23,7 @@
     "log": "aleclarson/log#2.0.0",
     "micromatch": "aleclarson/micromatch#2.3.8",
     "postinstall-build": "0.2.x",
-    "sorted-array": "aleclarson/sorted-array#1.0.0",
+    "sorted-array": "aleclarson/sorted-array#2.0.0",
     "sync": "aleclarson/sync#1.0.0"
   },
   "devDependencies": {
