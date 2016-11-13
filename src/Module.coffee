@@ -42,8 +42,8 @@ module.exports = (type) ->
 
       onFileFound = (filePath) =>
         return unless syncFs.isFile filePath
-        file = @getFile filePath
-        files.insert file
+        if file = @getFile filePath
+          files.insert file
 
       onceFilesReady = =>
 
