@@ -1,7 +1,9 @@
 
-# lotus-watch 1.0.0 ![stable](https://img.shields.io/badge/stability-stable-4EBA0F.svg?style=flat)
+# lotus-watch v1.1.0 ![stable](https://img.shields.io/badge/stability-stable-4EBA0F.svg?style=flat)
 
 A global plugin for [aleclarson/lotus](https://github.com/aleclarson/lotus).
+
+**TODO:** Update docs for v1.1.0
 
 ### `lotus watch`
 
