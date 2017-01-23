@@ -26,19 +26,8 @@ module.exports = ->
     ready: (mods) ->
 
       log.moat 1
-      if mods.length > 0
-        log.white "Found #{log.color.green mods.length} modules: "
-        log.moat 1
-        log.plusIndent 2
-        for module, index in mods
-          color = if index % 2 then "cyan" else "green"
-          newPart = module.name + " "
-          newLength = log.line.length + newPart.length
-          log.moat 0 if log.size and newLength > log.size[0] - log.indent
-          log[color] newPart
-        log.popIndent()
-      else
-        log.white "Found #{log.color.green.dim 0} modules!"
+      log.white "Found #{log.color.green mods.length} modules!"
+      log.moat 1
 
       Promise.all mods, (mod) ->
         mod.load [ "config", "plugins" ]

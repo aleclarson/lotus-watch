@@ -9,66 +9,29 @@ syncFs = require "io/sync"
 isType = require "isType"
 match = require "micromatch"
 Event = require "Event"
-Path = require "path"
+path = require "path"
 sync = require "sync"
 log = require "log"
 
 module.exports = (type) ->
 
-  type.defineValues
-
-    # The keys are patterns passed to 'module.watch'.
-    # The values are shaped like { watcher, promise }.
-    _watching: -> Object.create null
-
-    # This module has been deleted!
-    _deleted: no
-
   type.defineMethods
 
     # Search this module for files that match the given pattern.
-    watch: (pattern, listeners) ->
+    watch: (options, listeners) ->
+      assertType options, Object.or Array, String
 
-      if Array.isArray pattern
-        return Promise.all pattern, (pattern) =>
-          @watch pattern, listeners
+      if Array.isArray options
+        options = include: options.map (pattern) =>
+          if pattern[0] isnt path.sep
+          then path.join @path, pattern
+          else pattern
 
-      assertType pattern, String
-
-      if pattern[0] is "/"
-        relPath = Path.relative @path, pattern
-        if relPath[0..1] is ".."
-          throw Error "Absolute pattern does not belong to this module!"
-
-      else
-        pattern = Path.join @path, pattern
-
-      notify = lotus.Module._resolveListeners listeners
-      listener = lotus.File.watch pattern, notify
-
-      unless @_watching[pattern]
-        @_initialWatch pattern, notify
-        return listener
-
-      @_watching[pattern].promise
-
-      .then (files) ->
-        notify "ready", files
-
-      return listener
-
-    stopWatching: (pattern) ->
-      return unless @_watching[pattern]
-      { watcher } = @_watching[pattern]
-      watcher.close()
-      delete @_watching[pattern]
-      return
-
-    _initialWatch: (pattern, notify) ->
-
-      deferred = Promise.defer()
-
-      watcher = Chokidar.watch()
+      else if isType options, String
+        options = include:
+          if options[0] isnt path.sep
+          then path.join @path, options
+          else options
 
       files = SortedArray [], (a, b) ->
         a = a.path.toLowerCase()
@@ -77,34 +40,39 @@ module.exports = (type) ->
         else if a > b then 1
         else -1
 
-      onFileFound = (path) =>
-        return unless syncFs.isFile path
-        file = @getFile path
-        files.insert file
+      onFileFound = (filePath) =>
+        return unless syncFs.isFile filePath
+        if file = @getFile filePath
+          files.insert file
 
       onceFilesReady = =>
 
+        notify "ready", files.array
         watcher.removeListener "add", onFileFound
 
-        validEvents = { add: yes, change: yes, unlink: yes }
+        supportedEvents = {add:1, change:1, unlink:1, addDir:1, unlinkDir:1}
 
-        watcher.on "all", (event, path) =>
+        watcher.on "all", (event, filePath) =>
 
-          unless validEvents[event]
+          unless supportedEvents[event]
             log.moat 1
-            log.yellow "Warning: "
-            log.white @name
-            log.moat 0
-            log.gray.dim "Invalid event name: "
-            log.gray "'#{event}'"
+            log """
+              Warning: #{@name}
+              Unsupported event: #{event}
+              File path: #{filePath}
+            """
             log.moat 1
             return
 
-          file = @files[path]
+          # Ignore directory events.
+          return if event is "addDir"
+          return if event is "unlinkDir"
+
+          file = @files[filePath]
 
           if event is "add"
             return if file
-            file = @getFile path
+            file = @getFile filePath
             files.insert file
 
           return unless file
@@ -118,26 +86,16 @@ module.exports = (type) ->
 
           if event is "unlink"
             files.remove file
-            file._delete() # TODO: Detect when a directory of files is deleted.
+          return
 
-        notify "ready", files.array
-
-        deferred.resolve files.array
+      watcher = Chokidar.watch options.include,
+        ignored: options.exclude
 
       watcher.on "add", onFileFound
       watcher.once "ready", onceFilesReady
 
-      watcher.add pattern
-      @_watching[pattern] = {
-        watcher
-        promise: deferred.promise
-      }
-
-    # TODO: Use a 'retainCount' to prevent deleting early.
-    _delete: ->
-      return if @_deleted
-      @_deleted = yes
-      # TODO: delete lotus.Module.delete @name
+      notify = lotus.Module._resolveListeners listeners
+      return watchFiles options, notify
 
   type.defineStatics
 
@@ -150,7 +108,7 @@ module.exports = (type) ->
       assertType dirPath, String
 
       if dirPath[0] is "."
-        dirPath = Path.resolve process.cwd(), dirPath
+        dirPath = path.resolve process.cwd(), dirPath
 
       if not syncFs.isDir dirPath
         throw Error "Expected a directory: '#{dirPath}'"
@@ -166,11 +124,11 @@ module.exports = (type) ->
         .then (mods) -> notify "ready", mods
       return listener.start()
 
-    stopWatching: (path) ->
-      return unless @_watching[path]
-      { watcher } = @_watching[path]
+    stopWatching: (filePath) ->
+      return unless @_watching[filePath]
+      { watcher } = @_watching[filePath]
       watcher.close()
-      delete @_watching[path]
+      delete @_watching[filePath]
       return
 
     # The module directories being watched.
@@ -197,7 +155,7 @@ module.exports = (type) ->
 
       deferred = Promise.defer()
 
-      watcher = Chokidar.watch dirPath, { depth: 0 }
+      watcher = Chokidar.watch dirPath, {depth: 0}
 
       loading = []
       mods = SortedArray [], (a, b) ->
@@ -206,54 +164,72 @@ module.exports = (type) ->
         if a > b then 1 else -1
 
       onModuleFound = (modPath) ->
-        mod = loadModule modPath
-        .then (mod) -> mod and mods.insert mod
-        loading.push mod
+        loading.push modPath
 
       onModulesReady = ->
 
         watcher.removeListener "addDir", onModuleFound
 
-        # TODO: Support 'addDir' and 'unlinkDir'!
-        validEvents = { add: yes, change: yes, unlink: yes }
+        supportedEvents = {add:1, change:1, unlink:1, addDir:1, unlinkDir:1}
+
+        onModuleAdded = (modName, modPath) ->
+          if lotus.Module.has modName
+            return # TODO: Delete the pre-existing module.
+          loadModule(modPath).then (mod) ->
+            if mod
+              mods.insert mod
+              lotus.Module._didChange.emit "add", mod
+            return
+
+        onModuleDeleted = (modName, mod) ->
+          return if not lotus.Module.has modName
+          mod = lotus.Module.get modName
+          lotus.Module._didChange.emit "unlink", mod
+          mods.remove mod
+          return
 
         onModuleEvent = (event, modPath) ->
 
-          unless validEvents[event]
+          unless supportedEvents[event]
             log.moat 1
-            log.yellow "Warning: "
-            log.white "Module.watch()"
-            log.moat 0
-            log.gray.dim "Unhandled event name: "
-            log.gray "'#{event}'"
+            log """
+              Warning: #{@name}
+              Unsupported event: #{event}
+              File path: #{modPath}
+            """
             log.moat 1
             return
 
-          modName = Path.relative dirPath, modPath
-          if lotus.Module.has modName
-            mod = lotus.Module.get modName
+          # Ignore file events.
+          return if event is "add"
+          return if event is "change"
+          return if event is "unlink"
 
-          if event is "add"
-            return if mod
-            return loadModule modPath
-            .then (mod) ->
-              return if not mod
-              mods.insert mod
-              lotus.Module._didChange.emit event, mod
+          modName = path.relative dirPath, modPath
+          if event is "addDir"
+            onModuleAdded modName, modPath
+          else if event is "unlinkDir"
+            onModuleDeleted modName, modPath
+          return
 
-          return if not mod
-          lotus.Module._didChange.emit event, mod
-          mods.remove mod if event is "unlink"
+        Promise.all loading, (modPath) ->
+          loadModule(modPath).then (mod) ->
+            mod and mods.insert mod
+            return
 
-        Promise.all(loading).then ->
+        .then ->
           deferred.resolve mods.array
           notify "ready", mods.array
           watcher.on "all", onModuleEvent
 
-      loadModule = Promise.wrap (modPath) ->
-        return if modPath is dirPath
+      loadModule = (modPath) ->
+        if modPath is dirPath
+          return Promise()
         lotus.Module.load modPath
-        .then (mod) -> mod if mod and not lotus.isModuleIgnored mod.name
+        .then (mod) ->
+          return if not mod
+          return if lotus.isModuleIgnored mod.name
+          return mod
         .fail errors.loadModule
 
       watcher.on "addDir", onModuleFound
@@ -264,7 +240,25 @@ module.exports = (type) ->
         promise: deferred.promise
       }
 
+watchFiles = ({include, exclude}, notify) ->
+
+  if Array.isArray include
+    include =
+      if include.length > 1
+      then "(#{include.join "|"})"
+      else include[0]
+
+  if Array.isArray exclude
+    exclude =
+      if exclude.length > 1
+      then "(#{exclude.join "|"})"
+      else exclude[0]
+
+  return lotus.File.watch {include, exclude}, notify
+
 errors = {}
 errors.loadModule = (error) ->
-  return if /^Missing config file:/.test error.message
+  {message} = error
+  return if message.startsWith "Module path must be a directory:"
+  return if message.startsWith "Missing config file:"
   throw error
