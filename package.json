@@ -1,6 +1,6 @@
 {
   "name": "lotus-watch",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "js/index",
   "plugins": [
     "lotus-coffee"
@@ -13,17 +13,17 @@
     "lotus": "3.3.x"
   },
   "dependencies": {
-    "Event": "aleclarson/Event#3.1.2",
+    "Event": "aleclarson/Event#3.2.1",
+    "SortedArray": "aleclarson/SortedArray#2.1.0",
     "assertType": "aleclarson/assertType#2.0.1",
     "chokidar": "aleclarson/chokidar#1.4.2",
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
     "in-array": "aleclarson/in-array#1.0.0",
-    "io": "aleclarson/io#2.2.0",
+    "io": "aleclarson/io#2.2.1",
     "isType": "aleclarson/isType#1.0.1",
-    "log": "aleclarson/log#2.1.0",
+    "log": "aleclarson/log#2.2.0",
     "micromatch": "aleclarson/micromatch#2.3.8",
-    "sorted-array": "aleclarson/sorted-array#2.0.1",
-    "sync": "aleclarson/sync#1.0.1"
+    "sync": "aleclarson/sync#1.0.2"
   },
   "implicitDependencies": [
     "path"
