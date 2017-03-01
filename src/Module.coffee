@@ -224,7 +224,7 @@ module.exports = (type) ->
 
       loadModule = (modPath) ->
         if modPath is dirPath
-          return Promise()
+          return Promise.resolve()
         lotus.Module.load modPath
         .then (mod) ->
           return if not mod
