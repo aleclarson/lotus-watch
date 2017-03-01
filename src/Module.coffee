@@ -1,6 +1,6 @@
 
 emptyFunction = require "emptyFunction"
-SortedArray = require "sorted-array"
+SortedArray = require "SortedArray"
 assertType = require "assertType"
 Chokidar = require "chokidar"
 Promise = require "Promise"

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "Event": "aleclarson/Event#3.1.2",
+    "SortedArray": "aleclarson/SortedArray#2.1.0",
     "assertType": "aleclarson/assertType#2.0.1",
     "chokidar": "aleclarson/chokidar#1.4.2",
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
@@ -22,7 +23,6 @@
     "isType": "aleclarson/isType#1.0.1",
     "log": "aleclarson/log#2.1.0",
     "micromatch": "aleclarson/micromatch#2.3.8",
-    "sorted-array": "aleclarson/sorted-array#2.0.1",
     "sync": "aleclarson/sync#1.0.1"
   },
   "implicitDependencies": [
