@@ -12,7 +12,8 @@ type.defineArgs ->
 
   types: [
     String.or Array
-    ignored: String.or Array
+    ignored: String.or(Array).Maybe
+    cwd: String.Maybe
   ]
 
 type.defineMethods
@@ -31,7 +32,7 @@ type.defineMethods
 # Internal
 #
 
-type.defineValues (root, options) ->
+type.defineValues (patterns, options) ->
 
   _isLoading: yes
 
@@ -39,7 +40,7 @@ type.defineValues (root, options) ->
 
   _filePaths: new Set
 
-  _watcher: @_watch root, options
+  _watcher: @_watch patterns, options
 
   _events: Event.Map()
 
@@ -90,9 +91,9 @@ type.definePrototype
 
 type.defineMethods
 
-  _watch: (root, options) ->
+  _watch: (patterns, options) ->
 
-    watcher = chokidar.watch root, options
+    watcher = chokidar.watch patterns, options
     watcher.on "all", @_onChange
 
     watcher.once "ready", =>

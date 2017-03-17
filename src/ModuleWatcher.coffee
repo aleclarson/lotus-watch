@@ -13,7 +13,7 @@ type.defineArgs ->
 
   types: [
     String.or Array
-    ignored: String.or Array
+    ignored: String.or(Array).Maybe
   ]
 
 type.defineGetters

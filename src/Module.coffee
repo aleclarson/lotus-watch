@@ -12,7 +12,8 @@ mixin.defineMethods
     FileWatcher = LazyVar ->
       require "./FileWatcher"
 
-    return (pattern, options) ->
-      FileWatcher.call pattern, options
+    return (patterns, options = {}) ->
+      options.cwd = @path
+      FileWatcher.call patterns, options
 
 module.exports = mixin.apply
