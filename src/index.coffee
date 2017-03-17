@@ -1,10 +1,5 @@
 
-exports.initCommands = ->
-
-  watch: -> require "./cli"
-
-exports.initModuleType = ->
-  require "./Module"
-
-exports.initFileType = ->
-  require "./File"
+module.exports =
+  loadGlobals: -> require "./global"
+  loadCommands: -> require "./cli"
+  loadModuleMixin: -> require "./Module"

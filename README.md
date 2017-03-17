@@ -1,47 +1,49 @@
 
-# lotus-watch v1.2.0 ![stable](https://img.shields.io/badge/stability-stable-4EBA0F.svg?style=flat)
+# lotus-watch v2.0.0 ![stable](https://img.shields.io/badge/stability-stable-4EBA0F.svg?style=flat)
 
 A global plugin for [aleclarson/lotus](https://github.com/aleclarson/lotus).
 
-**TODO:** Update docs for v1.1.0
+### Command-line API
 
-### `lotus watch`
+```sh
+# Run the local plugins of each module.
+# Keep the process alive indefinitely.
+lotus watch
+```
 
-Run the local plugins for each module.
+### JS API
 
-Keep the process alive for file watchers.
+```js
+const lotus = require('lotus');
+const mod = lotus.modules.get(moduleName);
 
-### Module::watch(patterns, listeners)
+// Creates a `FileWatcher` with the given pattern(s) and options.
+const watcher = mod.watch('**/*.js');
 
-Crawl the module for its files.
+watcher.on('add', onFileAdded);
+watcher.on('change', onFileChanged);
+watcher.on('unlink', onFileDeleted);
 
-  • Watch a specific file pattern by passing
-    a String as the first argument.
+watcher.once('ready', function(filePaths) {
+  // Called when the watcher is fully initialized.
+  // Passes a `Set` of strings representing the files found.
+});
 
-  • Must provide a Function that will be called
-    for every file event.
+// Watch for added/deleted modules.
+const moduleWatcher = lotus.watchModules(directory, options);
 
-### Module.watch(path, listeners)
+moduleWatcher.on('add', onModuleAdded);
+moduleWatcher.on('unlink', onModuleDeleted);
 
-Crawl the directory for its modules.
+moduleWatcher.once('ready', function(modules) {
+  // Called when the watcher is fully initialized.
+  // Passes an array of `lotus.Module` instances that were found.
+});
 
-  • Calls the 2nd argument whenever a module is added or deleted.
+// Does NOT create a `FileWatcher`!
+// Instead, it only emits for files watched by a module.
+const fileListener = lotus.watchFiles('**/*.js', function(event, filePath) {
+  // Called for every added, changed, or deleted JS file.
+});
+```
 
-  • Returns a Promise that resolves the initial modules.
-
-### File.watch(patterns, listeners)
-
-Watch files that were cached by 'module.watch()'.
-
-  • This does NOT crawl anything.
-    Use 'module.watch()' first!
-
-  • Watch specific patterns by passing a String or
-    an { include: String, exclude: String } shape
-    as the first argument.
-
-  • Must provide a Function that will be called
-    for every file event.
-
-  • Returns a Listener that can be used
-    to stop receiving file events.
