@@ -3,14 +3,46 @@
 # TODO: Automated nightly commits. Exclude generated files.
 # TODO: Notify when dependencies exist that aren't being used.
 
-exports.watch = ->
+path = require "path"
+fs = require "fsx"
+
+exports.watch = (args) ->
 
   log.moat 1
-  log.white "Crawling: "
-  log.yellow lotus.path
+  log.gray "Crawling..."
   log.moat 1
 
-  watcher = lotus.watchModules lotus.path
+  dirs = args._
+  unless dirs.length
+    dirs.push lotus.path
+
+  Promise.all dirs, (dir) ->
+    dir = path.resolve dir
+    throw Error "Path must be a directory!" unless fs.isDir dir
+    configPath = path.join dir, "package.json"
+    if fs.isFile configPath
+    then watchModule dir
+    else watchModules dir
+
+  .then ->
+    {green} = log.color
+    log.moat 1
+    log.white "Found #{green lotus.modules.length} modules!"
+    log.moat 1
+
+  # Keep the process alive.
+  Promise.defer().promise
+
+watchModule = (dir) ->
+  mod = lotus.modules.load dir
+  mod.load ["config", "plugins"]
+  .fail errors.loadModule
+
+watchModules = (dir) ->
+
+  deferred = Promise.defer()
+
+  watcher = lotus.watchModules dir
 
   watcher.on "add", (mod) ->
     mod.load ["config", "plugins"]
@@ -22,22 +54,14 @@ exports.watch = ->
 
   watcher.on "ready", (mods) ->
 
-    {green} = log.color
-    log.moat 1
-    log.white "Found #{green mods.length} modules!"
-    log.moat 1
-
     Promise.all mods, (mod) ->
       mod.load ["config", "plugins"]
       .fail errors.loadModule
 
-    .then ->
-      log.moat 1
-      log.gray "Watching files..."
-      log.moat 1
+    .then deferred.resolve
+    .fail deferred.reject
 
-  # Keep the process alive.
-  Promise.defer().promise
+  return deferred.promise
 
 errors = {}
 errors.loadModule = (error) ->
