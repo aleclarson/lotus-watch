@@ -10,7 +10,7 @@
     "postinstall": "npm run build"
   },
   "peerDependencies": {
-    "lotus": "3.3.x"
+    "lotus": "3.4.x"
   },
   "dependencies": {
     "LazyVar": "aleclarson/LazyVar#2.2.1",
