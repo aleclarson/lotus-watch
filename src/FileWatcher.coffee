@@ -56,7 +56,7 @@ type.defineBoundMethods
       return
 
     # Ignore directory events.
-    return if /(addDir|unlinkDir)/.test event
+    return if /^(addDir|unlinkDir)$/.test event
 
     mod = lotus.modules.resolve filePath
     file = mod.files[filePath]
