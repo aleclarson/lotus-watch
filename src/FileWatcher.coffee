@@ -12,7 +12,7 @@ type.defineArgs ->
 
   types: [
     String.or Array
-    ignored: String.or(Array).Maybe
+    ignore: String.or(Array).Maybe
     cwd: String.Maybe
   ]
 
@@ -92,6 +92,10 @@ type.definePrototype
 type.defineMethods
 
   _watch: (patterns, options) ->
+
+    if options.ignore
+      options.ignored = options.ignore
+      delete options.ignore
 
     watcher = chokidar.watch patterns, options
     watcher.on "all", @_onChange
