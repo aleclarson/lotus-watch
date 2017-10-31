@@ -78,6 +78,7 @@ type.defineBoundMethods
     if event is "unlink"
       @_files.remove file
       @_filePaths.delete filePath
+      delete mod.files[filePath]
     return
 
 type.definePrototype
