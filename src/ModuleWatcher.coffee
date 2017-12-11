@@ -42,7 +42,7 @@ type.defineValues (root, options) ->
 
   _root: root
 
-  _modules: SortedArray [], @_moduleSorter
+  _modules: new SortedArray @_moduleSorter
 
   _modulePaths: new Set
 
