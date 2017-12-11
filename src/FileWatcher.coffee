@@ -36,7 +36,7 @@ type.defineValues (patterns, options) ->
 
   _isLoading: yes
 
-  _files: SortedArray [], @_fileSorter
+  _files: new SortedArray @_fileSorter
 
   _filePaths: new Set
 
